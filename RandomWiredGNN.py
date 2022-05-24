@@ -7,44 +7,22 @@ from torch_geometric.nn import global_max_pool, GatedGraphConv
 
 
 class RandomWireGCN(torch.nn.Module):
-    def __init__(self, features: int, n: int, p: float):
+    def __init__(self, layers: ModuleList, hidden_size: int, p: float):
         super(RandomWireGCN, self).__init__()
-        self.channels = features
-        self.architecture, self.sorting = self.create_er(n, p)
-
-        self.n = n
+        self.layers = layers
+        self.hidden_size = hidden_size
         self.p = p
-        self.in_nodes = [node for node in self.architecture.nodes if
-                         self.architecture.in_degree(node) == 0 and node != ""]
-        self.out_nodes = [node for node in self.architecture.nodes if
-                          self.architecture.out_degree(node) == 0 and node != ""]
 
     def forward(self, x: torch.Tensor, edge_index: torch.Tensor):
-        layer_result = [torch.zeros(len(x), self.channels)] * self.n
+        cached = [torch.zeros(len(x), self.hidden_size)] * len(self.layers)
+        for i, layer in enumerate(self.layers):
+            if i == 0:
+                layer_result = x
+            else:
+                layer_result = torch.zeros(len(x), self.hidden_size)
+                for k in range(i):
+                    if np.random.choice([0, 1], p=[1 - self.p, self.p]) == 1:
+                        layer_result += cached[k] / i
+            cached[i] = self.layers[i](layer_result, edge_index).relu()
 
-        for in_node in self.in_nodes:
-            layer_result[in_node] += self.architecture.nodes[in_node]["layer"](x, edge_index).relu() / len(
-                self.in_nodes)
-
-        for i in self.sorting:
-            tmp = torch.zeros(len(x), self.channels)
-            incoming = self.architecture.in_edges(i, data=True)
-            for u, v, data in incoming:
-                tmp += layer_result[u]
-            layer_result[i] += self.architecture.nodes[i]["layer"](tmp / len(incoming), edge_index).relu()
-
-        output = torch.zeros(len(x), self.channels)
-        for out_node in self.out_nodes:
-            output += self.architecture.nodes[out_node]["layer"](x, edge_index).relu() / len(self.out_nodes)
-
-        return output
-
-
-    def create_er(self, n: int, p: float):
-        layers = [GatedGraphConv(self.channels, 1)] * n
-        G = nx.gnp_random_graph(n, p, directed=True)
-        DAG = nx.DiGraph([(u, v) for (u, v) in G.edges() if u < v])
-        for node, label in DAG.nodes(data=True):
-            DAG.nodes[node]["layer"] = layers[node]
-
-        return DAG, list(nx.topological_sort(DAG))
+        return cached[-1]
