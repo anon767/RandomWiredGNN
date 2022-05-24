@@ -5,10 +5,10 @@ Pytorch Geometric Module based on "Dont stack layers in graph neural networks, w
 ## Usage
 
 ```Python
-layers = 5
+n_layers = 5
 hidden_size = 32
 layers = torch.nn.ModuleList()
-for _ in range(layers):
+for _ in range(n_layers):
     layers.append(GCNConv(hidden_size, hidden_size))
 model = RandomWireGCN(layers=layers, hidden_size=hidden_size, p=0.5)
 ```
