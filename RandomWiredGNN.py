@@ -6,11 +6,11 @@ from torch_geometric.nn import global_max_pool, GCNConv
 
 
 class RandomWireGCN(torch.nn.Module):
-    def __init__(self, layers: int, features: int, p: float):
+    def __init__(self, num_layers: int, features: int, p: float):
         super(RandomWireGCN, self).__init__()
         self.channels = features
         self.layers = torch.nn.ModuleList()
-        for _ in range(layers):
+        for _ in range(num_layers):
             self.layers.append(GCNConv(self.channels, self.channels))
         self.n = len(self.layers)
         self.p = p
