@@ -1,6 +1,6 @@
 # Random Wired Network
 
-Pytorch Geometric Module based on "Dont stack layers in graph neural networks, wire them randomly" by Valsesia et al. ICLR 2021
+Pytorch Geometric Module inspired by "Dont stack layers in graph neural networks, wire them randomly" by Valsesia et al. ICLR 2021
 
 ## Usage
 
